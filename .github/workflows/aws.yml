@@ -1,0 +1,61 @@
+on:
+  push:
+    branches:
+    - master
+  
+  release: 
+    types: [created]
+name: Deploy to Amazon ECS
+jobs:
+  deploy:
+    name: Deploy-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - name: Show Working directory
+      run: pwd  
+    - name: Show Working directory
+      run: ls -la  
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Show Working directory
+      run: ls -ltr  
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Build, jobeserver image to Amazon ECR  9020
+      id: build-jobeserver-auto-id
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: vss-images
+        IMAGE_TAG: vcp-jobeserver-auto-img
+      run: |
+        ls -ltr
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        cd jobeserver
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" 
+    - name: Build, auto-vcp-jobeserver-nginx image to Amazon ECR  9020
+      id: build-jobeserver-auto-nginx-id
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: vss-images
+        IMAGE_TAG: vcp-jobeserver-auto-nginx-img
+      run: |
+        ls -ltr
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        cd jobeserver/nginx
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
