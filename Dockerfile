@@ -1,5 +1,7 @@
-FROM judge0/compilers:1.4.0 AS production
+# Use the pre-built judge0 image from Docker Hub as the base
+FROM judge0/judge0:latest AS production
 
+# Metadata
 ENV JUDGE0_HOMEPAGE "https://judge0.com"
 LABEL homepage=$JUDGE0_HOMEPAGE
 
@@ -9,44 +11,48 @@ LABEL source_code=$JUDGE0_SOURCE_CODE
 ENV JUDGE0_MAINTAINER "Herman Zvonimir Došilović <hermanz.dosilovic@gmail.com>"
 LABEL maintainer=$JUDGE0_MAINTAINER
 
-ENV PATH "/usr/local/ruby-2.7.0/bin:/opt/.gem/bin:$PATH"
-ENV GEM_HOME "/opt/.gem/"
-
+# Optional: Add extra tools if needed
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      cron \
-      libpq-dev \
       sudo && \
-    rm -rf /var/lib/apt/lists/* && \
-    echo "gem: --no-document" > /root/.gemrc && \
-    gem install bundler:2.1.4 && \
-    npm install -g --unsafe-perm aglio@2.3.0
+    rm -rf /var/lib/apt/lists/*
 
+# Expose the API port
 EXPOSE 2358
 
+# Work directory for the API
 WORKDIR /api
 
-COPY Gemfile* ./
-RUN RAILS_ENV=production bundle
-
+# Copy necessary files (e.g., configuration or scripts) into the container
 COPY cron /etc/cron.d
 RUN cat /etc/cron.d/* | crontab -
 
-COPY . .
+# Configure default settings via environment variables (override as needed)
+ENV JUDGE0_TELEMETRY_ENABLE=false
+ENV ENABLE_WAIT_RESULT=true
+ENV ENABLE_BATCHED_SUBMISSIONS=false
+ENV REDIS_HOST=""
+ENV POSTGRES_HOST=""
+ENV ENABLE_NETWORK=false
 
-ENTRYPOINT ["/api/docker-entrypoint.sh"]
-CMD ["/api/scripts/server"]
-
+# Optional: Ensure proper permissions
 RUN useradd -u 1000 -m -r judge0 && \
     echo "judge0 ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
     chown judge0: /api/tmp/
 
+# Switch to judge0 user for running the application
 USER judge0
 
+# Version metadata
 ENV JUDGE0_VERSION "1.13.1"
 LABEL version=$JUDGE0_VERSION
 
+# Entry point and command to start the server
+ENTRYPOINT ["/api/docker-entrypoint.sh"]
+CMD ["/api/scripts/server"]
 
+# Development stage (optional, for debugging or extending functionality)
 FROM production AS development
 
+# Override CMD for development
 CMD ["sleep", "infinity"]
