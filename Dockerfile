@@ -1,58 +1,59 @@
-# Use the pre-built judge0 image from Docker Hub as the base
+# Use the official Judge0 base image
 FROM judge0/judge0:latest AS production
 
 # Metadata
-ENV JUDGE0_HOMEPAGE "https://judge0.com"
+ENV JUDGE0_HOMEPAGE="https://judge0.com"
 LABEL homepage=$JUDGE0_HOMEPAGE
 
-ENV JUDGE0_SOURCE_CODE "https://github.com/judge0/judge0"
+ENV JUDGE0_SOURCE_CODE="https://github.com/judge0/judge0"
 LABEL source_code=$JUDGE0_SOURCE_CODE
 
-ENV JUDGE0_MAINTAINER "Herman Zvonimir Došilović <hermanz.dosilovic@gmail.com>"
+ENV JUDGE0_MAINTAINER="Herman Zvonimir Došilović <hermanz.dosilovic@gmail.com>"
 LABEL maintainer=$JUDGE0_MAINTAINER
 
-# Optional: Add extra tools if needed
+# Ensure root permissions for system-level tasks
+USER root
+
+# Optional: Add any extra tools you might need
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       sudo && \
     rm -rf /var/lib/apt/lists/*
 
-# Expose the API port
+# Expose the Judge0 API port
 EXPOSE 2358
 
-# Work directory for the API
+# Set the working directory for the API
 WORKDIR /api
 
-# Copy necessary files (e.g., configuration or scripts) into the container
+# Copy cron jobs (optional)
 COPY cron /etc/cron.d
 RUN cat /etc/cron.d/* | crontab -
 
-# Configure default settings via environment variables (override as needed)
-ENV JUDGE0_TELEMETRY_ENABLE=false
-ENV ENABLE_WAIT_RESULT=true
-ENV ENABLE_BATCHED_SUBMISSIONS=false
-ENV REDIS_HOST=""
-ENV POSTGRES_HOST=""
-ENV ENABLE_NETWORK=false
+# Environment variables for Judge0 configurations
+ENV JUDGE0_TELEMETRY_ENABLE=false \
+    ENABLE_WAIT_RESULT=true \
+    ENABLE_BATCHED_SUBMISSIONS=false \
+    ENABLE_NETWORK=false
 
-# Optional: Ensure proper permissions
+# Optional: Ensure proper permissions for Judge0 user
 RUN useradd -u 1000 -m -r judge0 && \
     echo "judge0 ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
     chown judge0: /api/tmp/
 
-# Switch to judge0 user for running the application
+# Switch to the non-root Judge0 user
 USER judge0
 
-# Version metadata
-ENV JUDGE0_VERSION "1.13.1"
+# Judge0 version metadata
+ENV JUDGE0_VERSION="1.13.1"
 LABEL version=$JUDGE0_VERSION
 
-# Entry point and command to start the server
+# Define the entry point and command to start the server
 ENTRYPOINT ["/api/docker-entrypoint.sh"]
 CMD ["/api/scripts/server"]
 
-# Development stage (optional, for debugging or extending functionality)
+# Development stage (optional for debugging or extending functionality)
 FROM production AS development
 
-# Override CMD for development
+# Override CMD for development to keep the container running
 CMD ["sleep", "infinity"]
