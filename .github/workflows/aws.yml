@@ -2,7 +2,7 @@ on:
   push:
     branches:
       - master
-  
+
   release:
     types:
       - created
@@ -60,6 +60,22 @@ jobs:
           IMAGE_TAG: vcp-judgeserver-img
         run: |
           echo "Building and pushing judgeserver image..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      # Step 8: Build and Push auto-vcp-judgeserver-nginx Image
+      - name: Build and Push auto-vcp-judgeserver-nginx Image
+        id: build-judgeserver-auto-nginx-id
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: vss-images
+          IMAGE_TAG: vcp-judgeserver-auto-nginx-img
+        run: |
+          ls -ltr
+          # Build a docker container and push it to ECR
+          # so that it can be deployed to ECS.
+          cd judgeserver/nginx
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
