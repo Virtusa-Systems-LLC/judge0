@@ -1,13 +1,12 @@
+name: Deploy to Amazon ECS
+
 on:
   push:
     branches:
       - master
-
   release:
     types:
       - created
-
-name: Deploy to Amazon ECS
 
 jobs:
   deploy:
@@ -16,29 +15,33 @@ jobs:
     environment: production
 
     steps:
-      # Step 1: Display the current working directory
+      # Display current working directory
       - name: Display Current Directory
         run: |
           pwd
           ls -la
 
-      # Step 2: Checkout the repository
+      # Checkout the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 3: Set up Ruby
+      # Install Docker Compose
+      - name: Install Docker Compose
+        run: |
+          sudo apt update
+          sudo apt install docker-compose -y
+
+      # Set up Ruby
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.7' # Match the version in your Dockerfile or Gemfile
+          ruby-version: '2.7'
 
-      # Step 4: Install Dependencies
+      # Install Ruby dependencies
       - name: Install Ruby Dependencies
-        run: |
-          echo "Installing Ruby dependencies..."
-          bundle install --deployment --without development test
+        run: bundle install --deployment --without development test
 
-      # Step 5: Configure AWS credentials
+      # Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -46,36 +49,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # Step 6: Login to Amazon ECR
+      # Login to Amazon ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 7: Build and Push judgeserver Docker Image
+      # Build and Push judgeserver Image
       - name: Build and Push judgeserver Image
         id: build-judgeserver
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: vss-images
-          IMAGE_TAG: vcp-judgeserver-img
+          IMAGE_TAG: vcp-judgeserver-img-${{ github.sha }}
         run: |
-          echo "Building and pushing judgeserver image..."
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile.judgeserver .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      # Step 8: Build and Push auto-vcp-judgeserver-nginx Image
+      # Build and Push auto-vcp-judgeserver-nginx Image
       - name: Build and Push auto-vcp-judgeserver-nginx Image
-        id: build-judgeserver-auto-nginx-id
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: vss-images
-          IMAGE_TAG: vcp-judgeserver-auto-nginx-img
+          IMAGE_TAG: vcp-judgeserver-auto-nginx-img-${{ github.sha }}
         run: |
-          ls -ltr
-          # Build a docker container and push it to ECR
-          # so that it can be deployed to ECS.
           cd nginx
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
