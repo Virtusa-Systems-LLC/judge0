@@ -1,0 +1,45 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - master  # Trigger deployment only for changes to the 'main' branch
+
+jobs:
+  deploy:
+    name: Build, Push, and Deploy to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Log in to AWS ECR
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Build the Docker image
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:$IMAGE_TAG .
+
+      # Push the image to ECR
+      - name: Push Docker image to ECR
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:$IMAGE_TAG
+
+      # Deploy to ECS
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ecs-task-definition.json
+          service: ${{ secrets.ECS_SERVICE_NAME }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+          image: |
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:$(git rev-parse --short HEAD)
+
