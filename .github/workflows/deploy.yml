@@ -3,34 +3,40 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - master  # Trigger deployment only for changes to the 'main' branch
+      - master
 
 jobs:
   deploy:
     name: Build, Push, and Deploy to ECS
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     steps:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Log in to AWS ECR
+      # Log in to Amazon ECR
       - name: Log in to Amazon ECR
-        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
 
       # Build the Docker image
       - name: Build Docker image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:$IMAGE_TAG .
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:${{ env.IMAGE_TAG }} .
 
-      # Push the image to ECR
+      # Push the Docker image to ECR
       - name: Push Docker image to ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:$IMAGE_TAG
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:${{ env.IMAGE_TAG }}
 
       # Deploy to ECS
       - name: Deploy to Amazon ECS
@@ -41,5 +47,4 @@ jobs:
           cluster: ${{ secrets.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
           image: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:$(git rev-parse --short HEAD)
-
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:${{ github.sha }}
