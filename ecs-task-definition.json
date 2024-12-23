@@ -72,7 +72,12 @@
                 "-c",
                 "docker-entrypoint.sh --appendonly yes --requirepass \"$REDIS_PASSWORD\""
             ],
-            "environment": [],
+            "environment": [
+                {
+                    "name": "REDIS_PASSWORD",
+                    "value": "test-password"
+                }
+            ],
             "mountPoints": [],
             "volumesFrom": [],
             "systemControls": []
@@ -118,6 +123,5 @@
     "memory": "2048",
     "registeredAt": "2024-12-21T19:06:21.049Z",
     "registeredBy": "arn:aws:iam::787952688011:user/fcoos",
-    "enableFaultInjection": false,
     "tags": []
 }
