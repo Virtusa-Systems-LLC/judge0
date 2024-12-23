@@ -1,114 +1,123 @@
 {
-  "containerDefinitions": [
-    {
-      "name": "judge0-api",
-      "image": "judge0/judge0:1.13.0",
-      "cpu": 256,
-      "memory": 512,
-      "portMappings": [
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:787952688011:task-definition/judge0-task-definition:7",
+    "containerDefinitions": [
         {
-          "name": "judge0-api-2358-tcp",
-          "containerPort": 2358,
-          "hostPort": 2358,
-          "protocol": "tcp"
-        }
-      ],
-      "essential": true,
-      "environment": [
-        {
-          "name": "JUDGE0_SOURCE_CODE",
-          "value": "https://github.com/Ashish-pand/judge0"
+            "name": "judge0-api",
+            "image": "judge0/judge0:1.13.0",
+            "cpu": 256,
+            "memory": 512,
+            "portMappings": [
+                {
+                    "name": "judge0-api-2358-tcp",
+                    "containerPort": 2358,
+                    "hostPort": 2358,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "JUDGE0_SOURCE_CODE",
+                    "value": "https://github.com/Ashish-pand/judge0"
+                },
+                {
+                    "name": "JUDGE0_HOMEPAGE",
+                    "value": "https://judge0.com"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "systemControls": []
         },
         {
-          "name": "USE_DOCS_AS_HOMEPAGE",
-          "value": "true"
+            "name": "postgres-db",
+            "image": "postgres:13",
+            "cpu": 256,
+            "memory": 512,
+            "portMappings": [
+                {
+                    "name": "postgres-db-5432-tcp",
+                    "containerPort": 5432,
+                    "hostPort": 5432,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "your-secure-password"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "systemControls": []
         },
         {
-          "name": "JUDGE0_HOMEPAGE",
-          "value": "https://judge0.com"
-        }
-      ],
-      "mountPoints": [],
-      "volumesFrom": [],
-      "systemControls": []
-    },
-    {
-      "name": "postgres-db",
-      "image": "postgres:13",
-      "cpu": 256,
-      "memory": 512,
-      "portMappings": [
+            "name": "redis-cache",
+            "image": "redis:6",
+            "cpu": 128,
+            "memory": 256,
+            "portMappings": [
+                {
+                    "name": "redis-cache-6379-tcp",
+                    "containerPort": 6379,
+                    "hostPort": 6379,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": false,
+            "command": [
+                "bash",
+                "-c",
+                "docker-entrypoint.sh --appendonly yes --requirepass \"$REDIS_PASSWORD\""
+            ],
+            "environment": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "systemControls": []
+        },
         {
-          "name": "postgres-db-5432-tcp",
-          "containerPort": 5432,
-          "hostPort": 5432,
-          "protocol": "tcp"
+            "name": "worker",
+            "image": "judge0/judge0:1.13.0",
+            "cpu": 256,
+            "memory": 512,
+            "portMappings": [],
+            "essential": false,
+            "command": [
+                "./scripts/workers"
+            ],
+            "environment": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "systemControls": []
         }
-      ],
-      "essential": true,
-      "environment": [
+    ],
+    "family": "judge0-task-definition",
+    "networkMode": "awsvpc",
+    "revision": 7,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
         {
-          "name": "POSTGRES_PASSWORD",
-          "value": "your-secure-password"
-        }
-      ],
-      "mountPoints": [],
-      "volumesFrom": [],
-      "systemControls": []
-    },
-    {
-      "name": "redis-cache",
-      "image": "redis:6",
-      "cpu": 128,
-      "memory": 256,
-      "portMappings": [
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
         {
-          "name": "redis-cache-6379-tcp",
-          "containerPort": 6379,
-          "hostPort": 6379,
-          "protocol": "tcp"
+            "name": "ecs.capability.task-eni"
         }
-      ],
-      "essential": false,
-      "command": [
-        "bash",
-        "-c",
-        "docker-entrypoint.sh --appendonly yes --requirepass \"$REDIS_PASSWORD\""
-      ],
-      "environment": [],
-      "mountPoints": [],
-      "volumesFrom": [],
-      "systemControls": []
-    },
-    {
-      "name": "worker",
-      "image": "judge0/judge0:1.13.0",
-      "cpu": 256,
-      "memory": 512,
-      "portMappings": [],
-      "essential": false,
-      "command": [
-        "./scripts/workers"
-      ],
-      "environment": [],
-      "mountPoints": [],
-      "volumesFrom": [],
-      "systemControls": []
-    }
-  ],
-  "family": "judge0-task-definition",
-  "networkMode": "awsvpc",
-  "volumes": [],
-  "taskRoleArn": "",
-  "executionRoleArn": "",
-  "placementConstraints": [],
-  "requiresCompatibilities": [
-    "FARGATE"
-  ],
-  "cpu": "1024",
-  "memory": "2048",
-  "tags": [],
-  "runtimePlatform": {
-    "operatingSystemFamily": "LINUX"
-  }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+    "registeredAt": "2024-12-21T19:06:21.049Z",
+    "registeredBy": "arn:aws:iam::787952688011:user/fcoos",
+    "enableFaultInjection": false,
+    "tags": []
 }
