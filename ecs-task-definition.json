@@ -85,7 +85,7 @@
       {
         "name": "judge0-box",
         "efsVolumeConfiguration": {
-          "fileSystemId": "judge0_efs",  
+          "fileSystemId": "fs-0e8ba02e168c0fc30",  
           "rootDirectory": "/",
           "transitEncryption": "ENABLED"
         }
