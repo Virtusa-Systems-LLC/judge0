@@ -85,7 +85,7 @@
       {
         "name": "judge0-box",
         "efsVolumeConfiguration": {
-          "fileSystemId": "judge0_efs",  // Use your actual EFS file system ID
+          "fileSystemId": "judge0_efs",  
           "rootDirectory": "/",
           "transitEncryption": "ENABLED"
         }
