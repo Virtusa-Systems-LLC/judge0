@@ -84,9 +84,10 @@
     "volumes": [
       {
         "name": "judge0-box",
-        "dockerVolumeConfiguration": {
-          "scope": "task",
-          "autoprovision": true
+        "efsVolumeConfiguration": {
+          "fileSystemId": "judge0_efs",  // Use your actual EFS file system ID
+          "rootDirectory": "/",
+          "transitEncryption": "ENABLED"
         }
       }
     ]
