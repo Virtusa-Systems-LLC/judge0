@@ -41,7 +41,7 @@
         "cpu": 256,
         "memory": 512,
         "essential": true,
-        "command": ["bash", "-c", "chmod -R 777 /box && ./scripts/workers"],
+        
         "mountPoints": [
           {
             "sourceVolume": "judge0-box",
