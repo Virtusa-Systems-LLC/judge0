@@ -1,125 +1,51 @@
-{
-  "family": "judge0-task-definition",
-  "networkMode": "awsvpc",
-  "cpu": "1024",
-  "memory": "2048",
-  "requiresCompatibilities": ["FARGATE"],
-  "containerDefinitions": [
-    {
-      "name": "judge0-api",
-      "image": "judge0/judge0:latest",
-      "cpu": 256,
-      "memory": 512,
-      "portMappings": [
-        {
-          "containerPort": 2358,
-          "hostPort": 2358,
-          "protocol": "tcp"
-        }
-      ],
-      "essential": true,
-      "environment": [
-        {
-          "name": "DATABASE_URL",
-          "value": "postgres://username:test-pass@postgres-db:5432/judge0"
-        },
-        {
-          "name": "REDIS_URL",
-          "value": "redis://:test-pass@redis-cache:6379"
-        }
-      ],
-      "mountPoints": [
-        {
-          "sourceVolume": "judge0-box",
-          "containerPath": "/box"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/judge0-api",
-          "awslogs-region": "us-east-1",  
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    },
-    {
-      "name": "worker",
-      "image": "judge0/judge0:latest",
-      "cpu": 256,
-      "memory": 512,
-      "essential": true,
-      "mountPoints": [
-        {
-          "sourceVolume": "judge0-box",
-          "containerPath": "/box"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/judge0-worker",
-          "awslogs-region": "us-east-1",  
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    },
-    {
-      "name": "postgres-db",
-      "image": "postgres:16.2",
-      "cpu": 256,
-      "memory": 512,
-      "essential": true,
-      "environment": [
-        {
-          "name": "POSTGRES_PASSWORD",
-          "value": "test-pass"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/judge0-postgres-db",
-          "awslogs-region": "us-east-1", 
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    },
-    {
-      "name": "redis-cache",
-      "image": "redis:7.2.4",
-      "cpu": 128,
-      "memory": 256,
-      "essential": false,
-      "command": [
-        "bash",
-        "-c",
-        "docker-entrypoint.sh --appendonly no --requirepass \"$REDIS_PASSWORD\""
-      ],
-      "environment": [
-        {
-          "name": "REDIS_PASSWORD",
-          "value": "test-pass"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/judge0-redis-cache",
-          "awslogs-region": "us-east-1",  
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    }
-  ],
-  "volumes": [
-    {
-      "name": "judge0-box",
-      "efsVolumeConfiguration": {
-        "fileSystemId": "fs-0e8ba02e168c0fc30",
-        "rootDirectory": "/",
-        "transitEncryption": "ENABLED"
-      }
-    }
-  ]
-}
+x-logging:
+  &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 100M
+
+services:
+  server:
+    image: judge0/judge0:latest
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+      - judge0-box:/box
+    ports:
+      - "80:2358"
+    privileged: true
+    <<: *default-logging
+    restart: always
+
+  worker:
+    image: judge0/judge0:latest
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+      - judge0-box:/box
+    privileged: true
+    <<: *default-logging
+    restart: always
+
+  db:
+    image: postgres:16.2
+    env_file: judge0.conf
+    volumes:
+      - data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: always
+
+  redis:
+    image: redis:7.2.4
+    command: [
+      "bash", "-c",
+       'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: judge0.conf
+    <<: *default-logging
+    restart: always
+
+volumes:
+  data:
+  judge0-box:
+
