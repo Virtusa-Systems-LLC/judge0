@@ -540,19 +540,23 @@ FROM judge0/judge0:1.13.1
 USER root
 
 # Fix Debian Buster repo to use archive
+
 RUN sed -i 's|deb.debian.org/debian|archive.debian.org/debian|g' /etc/apt/sources.list && \
     sed -i 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list
 
 # Disable validity check (needed for archived repo)
+
 RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid
 
 # Install OpenJDK 17 manually
+
 RUN mkdir -p /usr/local/openjdk17 && \
     wget -O /tmp/jdk17.tar.gz https://download.oracle.com/java/17/archive/jdk-17.0.8_linux-x64_bin.tar.gz && \
     tar -xzf /tmp/jdk17.tar.gz --strip-components=1 -C /usr/local/openjdk17 && \
     rm /tmp/jdk17.tar.gz
 
 # Install OpenJDK 21 manually
+
 RUN mkdir -p /usr/local/openjdk21 && \
     wget -O /tmp/jdk21.tar.gz https://download.oracle.com/java/21/archive/jdk-21_linux-x64_bin.tar.gz && \
     tar -xzf /tmp/jdk21.tar.gz --strip-components=1 -C /usr/local/openjdk21 && \
@@ -560,6 +564,7 @@ RUN mkdir -p /usr/local/openjdk21 && \
 
 RUN ln -s /usr/lib/jvm/java-17-openjdk-amd64 /usr/local/openjdk17 && \
     ln -s /usr/lib/jvm/java-21-openjdk-amd64 /usr/local/openjdk21
+    
 =================================================================================================================
 
 Build and Push to ECR:
@@ -613,8 +618,6 @@ then after this check inside the judge-api container: verify
 
 Now finally check in browser:
 https://judge0.virtusasystems.com/languages
-
-<img width="1199" height="685" alt="Screenshot from 2026-02-18 19-48-34" src="https://github.com/user-attachments/assets/3eb11e03-96a2-4183-a522-cfbb3a064fc1" />
 
 
 <img width="1199" height="685" alt="Screenshot from 2026-02-18 19-48-34" src="https://github.com/user-attachments/assets/21b4d452-90d2-49e4-b3d5-2f0c105bbfde" />
